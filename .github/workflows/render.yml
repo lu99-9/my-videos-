@@ -43,7 +43,7 @@ jobs:
           log="$RUNNER_TEMP/edge-tts.log"
           if ! "$RUNNER_TEMP/voiceover/bin/python" scripts/generate-voiceover.py \
             'Pipeline online. Voiceover, kinetic typography, captions, and dual-format cloud rendering are all working.' \
-            --duration 7 2>&1 | tee "$log"; then
+            --voice en-US-AvaNeural --duration 7 2>&1 | tee "$log"; then
             error=$(tail -n 1 "$log" | sed -E 's#(https?|wss?)://[^[:space:]]+#[endpoint]#g')
             echo "::error title=Edge TTS synthesis failed::${error//%/%25}"
             exit 1
