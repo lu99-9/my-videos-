@@ -1,0 +1,87 @@
+name: Render video
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Cache dependencies and Chrome Headless Shell
+        id: render-cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            ~/.cache/remotion
+          key: render-v2-ubuntu-24.04-${{ runner.arch }}-node24-${{ hashFiles('package-lock.json') }}
+      - if: steps.render-cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - name: Install Edge TTS and synthesize fresh narration
+        shell: bash
+        run: |
+          python3 -m venv "$RUNNER_TEMP/voiceover"
+          "$RUNNER_TEMP/voiceover/bin/python" -m pip install -r scripts/requirements-voiceover.txt
+          "$RUNNER_TEMP/voiceover/bin/python" scripts/generate-voiceover.py \
+            'Pipeline online. Voiceover, kinetic typography, captions, and dual-format cloud rendering are all working.' \
+            --duration 7
+          test "$(stat -c %s public/audio/voiceover.mp3)" -gt 10000
+          test -s public/audio/voiceover.json
+          ffmpeg -nostdin -v error -xerror -i public/audio/voiceover.mp3 -map 0:a:0 -f null -
+      - name: Prepare Chrome Headless Shell
+        run: |
+          # Remotion discovers the browser cache at node_modules/.remotion.
+          mkdir -p "$HOME/.cache/remotion"
+          ln -sfnT "$HOME/.cache/remotion" node_modules/.remotion
+          npx --no-install remotion browser ensure --chrome-mode=headless-shell
+      - run: npm run render:landscape -- --chrome-mode=headless-shell --concurrency=100% --log=verbose
+      - run: npm run render:vertical -- --chrome-mode=headless-shell --concurrency=100% --log=verbose
+      - uses: actions/upload-artifact@v7
+        with:
+          name: remotion-video
+          path: |
+            out/output-landscape.mp4
+            out/output-vertical.mp4
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  cleanup:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Delete Remotion artifacts older than seven days
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cutoff=$(date -u -d '7 days ago' +'%Y-%m-%dT%H:%M:%SZ')
+          ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?name=remotion-video&per_page=100" |
+            jq -r --arg cutoff "$cutoff" '.artifacts[] | select(.name == "remotion-video" and .created_at < $cutoff) | .id')
+          while IFS= read -r id; do
+            [[ -z "$id" ]] && continue
+            if ! result=$(gh api --method DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$id" 2>&1); then
+              if [[ "$result" != *'(HTTP 404)'* ]]; then
+                echo "$result" >&2
+                exit 1
+              fi
+            fi
+          done <<< "$ids"
+        shell: bash

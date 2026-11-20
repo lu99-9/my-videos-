@@ -1,0 +1,12 @@
+# Remotion motion design
+
+- For every new video, including requests from a phone, start with the reusable components in `src/components/MotionKit.tsx`. Adapt their timing, palette, and typography to the brief.
+- Drive all motion from `useCurrentFrame()` and the composition FPS. Use `spring()` for spring-driven motion and clamp both ends of every `interpolate()` call with `extrapolateLeft: "clamp"` and `extrapolateRight: "clamp"`. CSS `transition-*` and Tailwind `animate-*` classes are forbidden anywhere in `src/`. CSS transitions, CSS keyframes, and Tailwind transition utilities are also forbidden there.
+- Use `<Img>` from `remotion` for images and `<Video>` and `<Audio>` from `@remotion/media` for video and audio. Never render raw HTML `<img>`, `<video>`, or `<audio>` tags in `src/`.
+- Memoize heavy static arrays, particle coordinates, and other expensive frame-independent data with `useMemo()` using their actual inputs as dependencies. Keep the current frame out of those dependencies so CPU-only renders can reuse the data.
+- For every multi-scene video request, propose a brief frame-by-frame storyboard covering each scene's frame range, key visuals, transitions, and audio cues. Wait for the user's confirmation before writing video code.
+- Give each frame a clear focal point. Set a strong display headline, a quieter supporting tier, and legible detail. Use `loadMotionFonts()` for the default Plus Jakarta Sans display, Inter body, and JetBrains Mono detail roles. Check line breaks, contrast, and safe margins at the target size.
+- Pair intentional entrances, transitions, and text accents with subtle `@remotion/sfx` cues on the same timeline beat. Use the MotionKit whoosh and pop helpers. Keep cues sparse and leave room for narration and music.
+- Use grain and vignette sparingly. Apply shake, whip pans, and motion blur where they communicate emphasis or direction. Preview the timing and listen to the rendered mix.
+- Load the installed official Remotion skills from `.agents/skills/` as needed, then run `npm run lint` and verify a render before handing off a video.
+- Before opening a PR for a new composition, use `npx remotion still` on both the Landscape and Vertical variants at 10%, 50%, and 90% of each resolved duration. Inspect all six images for text clipping, caption legibility, and layout overlap. Fix any issues and rerender the affected stills before opening the PR.

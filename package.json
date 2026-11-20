@@ -1,0 +1,44 @@
+{
+  "name": "my-videos",
+  "version": "1.0.0",
+  "description": "My Remotion video",
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion bundle",
+    "upgrade": "remotion upgrade",
+    "lint": "eslint src && tsc",
+    "render": "npm run render:landscape && npm run render:vertical",
+    "render:landscape": "remotion render src/index.ts Landscape out/output-landscape.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p",
+    "render:vertical": "remotion render src/index.ts Vertical out/output-vertical.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p"
+  },
+  "repository": {},
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@remotion/captions": "4.0.545",
+    "@remotion/cli": "4.0.545",
+    "@remotion/google-fonts": "4.0.545",
+    "@remotion/media": "4.0.545",
+    "@remotion/motion-blur": "4.0.545",
+    "@remotion/noise": "4.0.545",
+    "@remotion/sfx": "4.0.545",
+    "@remotion/tailwind-v4": "4.0.545",
+    "@remotion/transitions": "4.0.545",
+    "lucide-react": "1.76.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.545",
+    "tailwindcss": "4.2.0"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.545",
+    "@types/react": "19.3.0",
+    "@types/web": "0.0.166",
+    "eslint": "10.12.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
+  },
+  "private": true
+}
