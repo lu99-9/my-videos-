@@ -32,14 +32,22 @@ jobs:
           key: render-v2-ubuntu-24.04-${{ runner.arch }}-node24-${{ hashFiles('package-lock.json') }}
       - if: steps.render-cache.outputs.cache-hit != 'true'
         run: npm ci
-      - name: Install Edge TTS and synthesize fresh narration
+      - name: Install Edge TTS
         shell: bash
         run: |
           python3 -m venv "$RUNNER_TEMP/voiceover"
           "$RUNNER_TEMP/voiceover/bin/python" -m pip install -r scripts/requirements-voiceover.txt
-          "$RUNNER_TEMP/voiceover/bin/python" scripts/generate-voiceover.py \
+      - name: Synthesize fresh narration
+        shell: bash
+        run: |
+          log="$RUNNER_TEMP/edge-tts.log"
+          if ! "$RUNNER_TEMP/voiceover/bin/python" scripts/generate-voiceover.py \
             'Pipeline online. Voiceover, kinetic typography, captions, and dual-format cloud rendering are all working.' \
-            --duration 7
+            --duration 7 2>&1 | tee "$log"; then
+            error=$(tail -n 1 "$log" | sed -E 's#(https?|wss?)://[^[:space:]]+#[endpoint]#g')
+            echo "::error title=Edge TTS synthesis failed::${error//%/%25}"
+            exit 1
+          fi
           test "$(stat -c %s public/audio/voiceover.mp3)" -gt 10000
           test -s public/audio/voiceover.json
           ffmpeg -nostdin -v error -xerror -i public/audio/voiceover.mp3 -map 0:a:0 -f null -
